@@ -138,6 +138,7 @@ struct Flash_fwd_params : public Qkv_params {
 
     void * __restrict__ alibi_slopes_ptr;
     index_t alibi_slopes_batch_stride;
+    bool is_off_by_one_softmax;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -43,7 +43,8 @@ void set_params_fprop(Flash_fwd_params &params,
                       float softmax_scale,
                       int window_size_left,
                       int window_size_right,
-                      bool seqlenq_ngroups_swapped=false) {
+                      bool seqlenq_ngroups_swapped=false,
+                      const bool is_off_by_one_softmax=false) {
 
     // Reset the parameters
     params = {};
@@ -135,6 +136,7 @@ void set_params_fprop(Flash_fwd_params &params,
     #ifdef FLASHATTENTION_DISABLE_UNEVEN_K
         TORCH_CHECK(d == d_rounded, "This flash attention build does not support headdim not being a multiple of 32.");
     #endif
+    params.is_off_by_one_softmax = is_off_by_one_softmax;
 }
 
 void set_params_dgrad(Flash_bwd_params &params,
@@ -326,7 +328,8 @@ mha_fwd(at::Tensor &q,         // batch_size x seqlen_q x num_heads x head_size
         int window_size_left,
         int window_size_right,
         const bool return_softmax,
-        c10::optional<at::Generator> gen_) {
+        c10::optional<at::Generator> gen_,
+        const bool is_off_by_one_softmax) {
 
     auto dprops = at::cuda::getCurrentDeviceProperties();
     // bool is_sm75 = dprops->major == 7 && dprops->minor == 5;
@@ -446,7 +449,9 @@ mha_fwd(at::Tensor &q,         // batch_size x seqlen_q x num_heads x head_size
                      p_dropout,
                      softmax_scale,
                      window_size_left,
-                     window_size_right);
+                     window_size_right,
+                     /*seqlenq_ngroups_swapped=*/false,
+                     is_off_by_one_softmax);
 
 
     set_params_splitkv(params, batch_size, num_heads,
