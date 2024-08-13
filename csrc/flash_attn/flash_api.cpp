@@ -520,7 +520,8 @@ mha_varlen_fwd(at::Tensor &q,  // total_q x num_heads x head_size, total_q := \s
                int window_size_left,
                int window_size_right,
                const bool return_softmax,
-               c10::optional<at::Generator> gen_) {
+               c10::optional<at::Generator> gen_,
+               const bool is_off_by_one_softmax) {
 
     auto dprops = at::cuda::getCurrentDeviceProperties();
     // bool is_sm75 = dprops->major == 7 && dprops->minor == 5;
@@ -688,7 +689,8 @@ mha_varlen_fwd(at::Tensor &q,  // total_q x num_heads x head_size, total_q := \s
                      softmax_scale,
                      window_size_left,
                      window_size_right,
-                     seqlenq_ngroups_swapped);
+                     seqlenq_ngroups_swapped,
+                     is_off_by_one_softmax);
 
     if (paged_KV) {
         params.block_table = block_table.data_ptr<int>();

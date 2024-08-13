@@ -9,6 +9,7 @@
 #include "static_switch.h"
 #include "flash.h"
 #include "flash_fwd_kernel.h"
+#include <cassert>
 
 // Determine if the architecture supports FLASH and define a macro to handle parameter modifiers
 #if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 800
@@ -63,6 +64,7 @@ void run_flash_fwd(Flash_fwd_params &params, cudaStream_t stream) {
     const bool is_even_K = params.d == Kernel_traits::kHeadDim;
     const bool return_softmax = params.p_ptr != nullptr;
     const bool is_off_by_one_softmax = params.is_off_by_one_softmax;
+    printf("DEBUG: is_off_by_one_softmax %d\n", is_off_by_one_softmax);
     BOOL_SWITCH(is_even_MN, IsEvenMNConst, [&] {
         EVENK_SWITCH(is_even_K, IsEvenKConst, [&] {
             LOCAL_SWITCH((params.window_size_left >= 0 || params.window_size_right >= 0) && !Is_causal, Is_local, [&] {
@@ -105,6 +107,7 @@ void run_flash_splitkv_fwd(Flash_fwd_params &params, cudaStream_t stream) {
     dim3 grid(num_m_block, params.num_splits > 1 ? params.num_splits : params.b, params.num_splits > 1 ? params.b * params.h : params.h);
     const bool is_even_MN = params.cu_seqlens_q == nullptr && params.cu_seqlens_k == nullptr && params.seqlen_k % Kernel_traits::kBlockN == 0 && params.seqlen_q % Kernel_traits::kBlockM == 0;
     const bool is_even_K = params.d == Kernel_traits::kHeadDim;
+    assert(!params.is_off_by_one_softmax && "Off-by-one softmax is not supported");
     BOOL_SWITCH(params.is_causal, Is_causal, [&] {
         BOOL_SWITCH(is_even_MN, IsEvenMNConst, [&] {
             EVENK_SWITCH(is_even_K, IsEvenKConst, [&] {
