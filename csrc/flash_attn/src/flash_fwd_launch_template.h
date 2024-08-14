@@ -64,7 +64,13 @@ void run_flash_fwd(Flash_fwd_params &params, cudaStream_t stream) {
     const bool is_even_K = params.d == Kernel_traits::kHeadDim;
     const bool return_softmax = params.p_ptr != nullptr;
     const bool is_off_by_one_softmax = params.is_off_by_one_softmax;
-    printf("DEBUG: is_off_by_one_softmax %d\n", is_off_by_one_softmax);
+
+    static bool once = true;
+    if (once) {
+        printf("DEBUG: is_off_by_one_softmax %d\n", is_off_by_one_softmax);
+        once = false;
+    }
+    
     BOOL_SWITCH(is_even_MN, IsEvenMNConst, [&] {
         EVENK_SWITCH(is_even_K, IsEvenKConst, [&] {
             LOCAL_SWITCH((params.window_size_left >= 0 || params.window_size_right >= 0) && !Is_causal, Is_local, [&] {
